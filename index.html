@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eco-Plate | 잔반 제로 솔루션</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+        }
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .tab-menu {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            background: white;
+            border-radius: 10px;
+            padding: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+        .tab-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .screen {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        .screen.active {
+            display: block;
+        }
+        .card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        h2 { margin-top: 0; font-size: 1.2rem; }
+        h3 { margin: 5px 0; font-size: 1rem; color: #555; }
+        
+        /* Dashboard Styles */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .stat-box {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        .weather-alert {
+            background-color: #e3f2fd;
+            border-left: 5px solid #2196f3;
+            padding: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .menu-recommendation {
+            border: 2px solid var(--primary-color);
+            padding: 15px;
+            border-radius: 10px;
+            background: #fff;
+        }
+
+        /* Scanner Styles */
+        .scanner-view {
+            width: 100%;
+            height: 250px;
+            background-color: #333;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: red;
+            animation: scan 2s infinite;
+        }
+        .btn-scan {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+        .result-popup {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+            padding: 20px;
+            background: #fff3e0;
+            border-radius: 10px;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scan { 0% { top: 10%; } 50% { top: 90%; } 100% { top: 10%; } }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Eco-Plate</h1>
+</header>
+
+<div class="container">
+    <div class="tab-menu">
+        <button class="tab-btn active" onclick="switchTab('dashboard')">영양사 대시보드</button>
+        <button class="tab-btn" onclick="switchTab('scanner')">퇴식구 스캐너</button>
+    </div>
+
+    <div id="dashboard" class="screen active">
+        <div class="card">
+            <div class="weather-alert">
+                <span style="font-size: 2rem; margin-right: 10px;">☔</span>
+                <div>
+                    <strong>내일 날씨 예보: 비</strong><br>
+                    <small>비 오는 날은 '튀김류' 선호도가 높습니다.</small>
+                </div>
+            </div>
+
+            <div class="menu-recommendation">
+                <h2>🤖 AI 추천 식단 (잔반 최소화)</h2>
+                <h3 style="color: #d32f2f;">내일의 골든 메뉴:</h3>
+                <p style="font-size: 1.1rem; font-weight: bold;">잡곡밥 + 돈까스 + 크림스프</p>
+                <hr>
+                <p>🔽 예상 잔반량: <strong>매우 낮음 (5kg 미만)</strong></p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📊 이번 달 ESG 성과</h2>
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <div>탄소 감축량</div>
+                    <div class="stat-value">50kg</div>
+                </div>
+                <div class="stat-box">
+                    <div>예산 절감액</div>
+                    <div class="stat-value">32만원</div>
+                </div>
+            </div>
+            <p style="font-size: 0.8rem; text-align: center; margin-top: 10px; color: #666;">
+                *절감된 예산은 다음 달 '특식' 예산으로 이월됩니다.
+            </p>
+        </div>
+    </div>
+
+    <div id="scanner" class="screen">
+        <div class="card">
+            <h2>식판 스캔하기</h2>
+            <p>식사를 마친 후 식판을 카메라에 비춰주세요.</p>
+            
+            <div class="scanner-view">
+                <div class="scan-line"></div>
+                <span>📷 카메라 작동 중...</span>
+            </div>
+
+            <button class="btn-scan" onclick="scanPlate()">잔반 측정하기</button>
+
+            <div id="scanResult" class="result-popup">
+                <h3 style="color: var(--primary-color);">인식 완료!</h3>
+                <p>오늘 남긴 잔반량: <strong>50g</strong> (아주 잘했어요!)</p>
+                <div style="background: gold; display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: bold;">
+                    💰 100 포인트 적립
+                </div>
+                <p style="font-size: 0.8rem; margin-top: 10px;">(매점 쿠폰으로 교환 가능)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function switchTab(tabName) {
+        // 모든 탭 버튼과 화면 초기화
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+
+        // 선택된 탭 활성화
+        event.currentTarget.classList.add('active');
+        document.getElementById(tabName).classList.add('active');
+    }
+
+    function scanPlate() {
+        const btn = document.querySelector('.btn-scan');
+        const result = document.getElementById('scanResult');
+        
+        btn.textContent = "분석 중...";
+        btn.disabled = true;
+
+        setTimeout(() => {
+            btn.style.display = 'none';
+            result.style.display = 'block';
+            result.style.animation = 'fadeIn 0.5s';
+        }, 1500); // 1.5초 후 결과 표시
+    }
+</script>
+
+</body>
+</html>

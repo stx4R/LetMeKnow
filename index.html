@@ -1,246 +1,201 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eco-Plate | 잔반 제로 솔루션</title>
-    <style>
-        :root {
-            --primary-color: #4CAF50;
-            --bg-color: #f4f7f6;
-            --card-bg: #ffffff;
-        }
-        body {
+import streamlit as st
+import pandas as pd
+import datetime
+import os
+
+# --- 설정 및 데이터 관리 ---
+CSV_FILE = 'issues.csv'
+
+def load_data():
+    if not os.path.exists(CSV_FILE):
+        return pd.DataFrame(columns=['ID', '날짜', '내용', '상태', '코멘트'])
+    return pd.read_csv(CSV_FILE)
+
+def save_data(df):
+    df.to_csv(CSV_FILE, index=False)
+
+# --- 토스(Toss) 스타일 CSS 적용 ---
+def local_css():
+    st.markdown("""
+        <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        
+        html, body, [class*="css"] {
             font-family: 'Pretendard', sans-serif;
-            background-color: var(--bg-color);
-            margin: 0;
-            padding: 0;
-            color: #333;
+            background-color: #F9FAFB;
+            color: #191F28;
         }
-        header {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 1rem;
-            text-align: center;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .tab-menu {
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 20px;
-            background: white;
-            border-radius: 10px;
-            padding: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .tab-btn {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            background: none;
-            cursor: pointer;
-            font-weight: bold;
-            border-radius: 8px;
-            transition: 0.3s;
-        }
-        .tab-btn.active {
-            background-color: var(--primary-color);
-            color: white;
-        }
-        .screen {
-            display: none;
-            animation: fadeIn 0.5s;
-        }
-        .screen.active {
-            display: block;
-        }
-        .card {
-            background: var(--card-bg);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-        h2 { margin-top: 0; font-size: 1.2rem; }
-        h3 { margin: 5px 0; font-size: 1rem; color: #555; }
         
-        /* Dashboard Styles */
-        .stat-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
+        /* 헤더 스타일 */
+        .main-header {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #191F28;
+            margin-bottom: 0.5rem;
         }
-        .stat-box {
-            background: #e8f5e9;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-        }
-        .stat-value {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--primary-color);
-        }
-        .weather-alert {
-            background-color: #e3f2fd;
-            border-left: 5px solid #2196f3;
-            padding: 10px;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-        }
-        .menu-recommendation {
-            border: 2px solid var(--primary-color);
-            padding: 15px;
-            border-radius: 10px;
-            background: #fff;
-        }
-
-        /* Scanner Styles */
-        .scanner-view {
-            width: 100%;
-            height: 250px;
-            background-color: #333;
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            margin-bottom: 20px;
-            position: relative;
-        }
-        .scan-line {
-            position: absolute;
-            width: 100%;
-            height: 2px;
-            background: red;
-            animation: scan 2s infinite;
-        }
-        .btn-scan {
-            width: 100%;
-            padding: 15px;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 10px;
+        .sub-header {
             font-size: 1.1rem;
-            cursor: pointer;
+            color: #8B95A1;
+            margin-bottom: 2rem;
         }
-        .result-popup {
-            display: none;
-            text-align: center;
-            margin-top: 20px;
-            padding: 20px;
-            background: #fff3e0;
-            border-radius: 10px;
-        }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes scan { 0% { top: 10%; } 50% { top: 90%; } 100% { top: 10%; } }
-    </style>
-</head>
-<body>
-
-<header>
-    <h1>Eco-Plate</h1>
-</header>
-
-<div class="container">
-    <div class="tab-menu">
-        <button class="tab-btn active" onclick="switchTab('dashboard')">영양사 대시보드</button>
-        <button class="tab-btn" onclick="switchTab('scanner')">퇴식구 스캐너</button>
-    </div>
-
-    <div id="dashboard" class="screen active">
-        <div class="card">
-            <div class="weather-alert">
-                <span style="font-size: 2rem; margin-right: 10px;">☔</span>
-                <div>
-                    <strong>내일 날씨 예보: 비</strong><br>
-                    <small>비 오는 날은 '튀김류' 선호도가 높습니다.</small>
-                </div>
-            </div>
-
-            <div class="menu-recommendation">
-                <h2>🤖 AI 추천 식단 (잔반 최소화)</h2>
-                <h3 style="color: #d32f2f;">내일의 골든 메뉴:</h3>
-                <p style="font-size: 1.1rem; font-weight: bold;">잡곡밥 + 돈까스 + 크림스프</p>
-                <hr>
-                <p>🔽 예상 잔반량: <strong>매우 낮음 (5kg 미만)</strong></p>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>📊 이번 달 ESG 성과</h2>
-            <div class="stat-grid">
-                <div class="stat-box">
-                    <div>탄소 감축량</div>
-                    <div class="stat-value">50kg</div>
-                </div>
-                <div class="stat-box">
-                    <div>예산 절감액</div>
-                    <div class="stat-value">32만원</div>
-                </div>
-            </div>
-            <p style="font-size: 0.8rem; text-align: center; margin-top: 10px; color: #666;">
-                *절감된 예산은 다음 달 '특식' 예산으로 이월됩니다.
-            </p>
-        </div>
-    </div>
-
-    <div id="scanner" class="screen">
-        <div class="card">
-            <h2>식판 스캔하기</h2>
-            <p>식사를 마친 후 식판을 카메라에 비춰주세요.</p>
-            
-            <div class="scanner-view">
-                <div class="scan-line"></div>
-                <span>📷 카메라 작동 중...</span>
-            </div>
-
-            <button class="btn-scan" onclick="scanPlate()">잔반 측정하기</button>
-
-            <div id="scanResult" class="result-popup">
-                <h3 style="color: var(--primary-color);">인식 완료!</h3>
-                <p>오늘 남긴 잔반량: <strong>50g</strong> (아주 잘했어요!)</p>
-                <div style="background: gold; display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: bold;">
-                    💰 100 포인트 적립
-                </div>
-                <p style="font-size: 0.8rem; margin-top: 10px;">(매점 쿠폰으로 교환 가능)</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    function switchTab(tabName) {
-        // 모든 탭 버튼과 화면 초기화
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
-
-        // 선택된 탭 활성화
-        event.currentTarget.classList.add('active');
-        document.getElementById(tabName).classList.add('active');
-    }
-
-    function scanPlate() {
-        const btn = document.querySelector('.btn-scan');
-        const result = document.getElementById('scanResult');
         
-        btn.textContent = "분석 중...";
-        btn.disabled = true;
+        /* 입력 폼 스타일 */
+        .stTextArea textarea {
+            background-color: #FFFFFF;
+            border-radius: 12px;
+            border: 1px solid #E5E8EB;
+        }
+        
+        /* 버튼 스타일 (토스 블루) */
+        .stButton button {
+            background-color: #3182F6;
+            color: white;
+            border-radius: 12px;
+            border: none;
+            padding: 12px 20px;
+            font-weight: 600;
+            width: 100%;
+        }
+        .stButton button:hover {
+            background-color: #1B64DA;
+            color: white;
+        }
+        
+        /* 상태 배지 스타일 */
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
-        setTimeout(() => {
-            btn.style.display = 'none';
-            result.style.display = 'block';
-            result.style.animation = 'fadeIn 0.5s';
-        }, 1500); // 1.5초 후 결과 표시
-    }
-</script>
+# --- 메인 앱 로직 ---
+def main():
+    st.set_page_config(page_title="알려줘", page_icon="📢", layout="centered")
+    local_css()
 
-</body>
-</html>
+    # 세션 상태 초기화
+    if 'logged_in' not in st.session_state:
+        st.session_state['logged_in'] = False
+
+    # 상단 헤더 및 개발자 로그인 버튼 (컬럼으로 배치)
+    col1, col2 = st.columns([8, 2])
+    with col1:
+        st.markdown('<div class="main-header">📢 알려줘</div>', unsafe_allow_html=True)
+        st.markdown('<div class="sub-header">우리 반의 더 나은 내일을 위해, 무엇이든 말해주세요.</div>', unsafe_allow_html=True)
+    with col2:
+        # 로그인 상태가 아닐 때만 로그인 버튼/팝업 표시
+        if not st.session_state['logged_in']:
+            with st.popover("개발자 로그인"):
+                user_id = st.text_input("아이디")
+                user_pw = st.text_input("비밀번호", type="password")
+                if st.button("접속"):
+                    if user_id == "D3v310p3r" and user_pw == "12345678":
+                        st.session_state['logged_in'] = True
+                        st.success("로그인 성공!")
+                        st.rerun()
+                    else:
+                        st.error("정보가 일치하지 않습니다.")
+        else:
+            if st.button("로그아웃"):
+                st.session_state['logged_in'] = False
+                st.rerun()
+
+    # --- 탭 구분 (일반 사용자 / 개발자) ---
+    # 실제로는 탭 대신 로그인 여부에 따라 화면을 다르게 보여줍니다.
+    
+    df = load_data()
+
+    # 1. 관리자(개발자) 화면
+    if st.session_state['logged_in']:
+        st.info("🔧 개발자 모드입니다. 건의사항을 관리하세요.")
+        
+        if df.empty:
+            st.write("아직 등록된 건의사항이 없습니다.")
+        else:
+            # 최신순 정렬
+            for index, row in df[::-1].iterrows():
+                with st.container():
+                    st.markdown(f"""
+                    <div style="background-color:white; padding:20px; border-radius:15px; margin-bottom:15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                        <div style="font-size:0.9rem; color:#8B95A1;">{row['날짜']} | ID: {row['ID']}</div>
+                        <div style="font-size:1.2rem; font-weight:bold; margin: 10px 0;">{row['내용']}</div>
+                        <div style="margin-top:10px;"><b>현재 상태:</b> {row['상태']}</div>
+                        <div style="margin-top:5px; color:#3182F6;"><b>개발자 코멘트:</b> {row['코멘트']}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # 관리 기능 (상태 변경 및 코멘트)
+                    c1, c2, c3, c4 = st.columns([2, 2, 2, 4])
+                    if c1.button("해결 완료", key=f"sol_{index}"):
+                        df.at[index, '상태'] = "✅ 해결 완료"
+                        save_data(df)
+                        st.rerun()
+                    if c2.button("보류", key=f"hold_{index}"):
+                        df.at[index, '상태'] = "⏸ 보류"
+                        save_data(df)
+                        st.rerun()
+                    if c3.button("미완료", key=f"unsol_{index}"):
+                        df.at[index, '상태'] = "🔥 해결 미완료"
+                        save_data(df)
+                        st.rerun()
+                    
+                    new_comment = c4.text_input("코멘트 달기", key=f"com_{index}", placeholder="답변을 입력 후 엔터")
+                    if new_comment:
+                        df.at[index, '코멘트'] = new_comment
+                        save_data(df)
+                        st.rerun()
+                st.divider()
+
+    # 2. 일반 사용자 화면 (건의하기 & 목록 보기)
+    else:
+        # 건의하기 폼
+        with st.container():
+            st.markdown("### 📝 문제점 건의하기")
+            with st.form("suggestion_form", clear_on_submit=True):
+                content = st.text_area("어떤 문제가 있나요?", height=150, placeholder="예: 칠판 지우개가 너무 낡았어요.")
+                submitted = st.form_submit_button("보내기")
+                
+                if submitted and content:
+                    new_id = len(df) + 1
+                    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+                    new_data = pd.DataFrame({
+                        'ID': [new_id],
+                        '날짜': [now],
+                        '내용': [content],
+                        '상태': ['접수 대기'],
+                        '코멘트': ['-']
+                    })
+                    df = pd.concat([df, new_data], ignore_index=True)
+                    save_data(df)
+                    st.success("소중한 의견이 전달되었습니다!")
+                    st.rerun()
+
+        st.markdown("---")
+        st.markdown("### 👀 건의함 목록")
+        
+        if df.empty:
+            st.write("아직 등록된 건의사항이 없습니다. 첫 번째 의견을 남겨주세요!")
+        else:
+            # 공개된 목록 보기 (읽기 전용)
+            for _, row in df[::-1].iterrows():
+                status_color = "#333"
+                if "완료" in row['상태']: status_color = "#3182F6" # Blue
+                elif "보류" in row['상태']: status_color = "#FFB300" # Amber
+                elif "미완료" in row['상태']: status_color = "#F04452" # Red
+
+                st.markdown(f"""
+                <div style="background-color:white; padding:20px; border-radius:15px; margin-bottom:15px; border: 1px solid #E5E8EB;">
+                    <span style="background-color:{status_color}; color:white; padding:4px 8px; border-radius:6px; font-size:0.8rem;">{row['상태']}</span>
+                    <span style="float:right; color:#8B95A1; font-size:0.8rem;">{row['날짜']}</span>
+                    <div style="font-size:1.1rem; font-weight:600; margin-top:10px; margin-bottom:10px;">{row['내용']}</div>
+                    <div style="background-color:#F2F4F6; padding:10px; border-radius:8px; font-size:0.9rem; color:#4E5968;">
+                        <b>👨‍💻 개발자 답변:</b> {row['코멘트']}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+if __name__ == "__main__":
+    main()

@@ -26,7 +26,6 @@ def local_css():
             color: #191F28;
         }
         
-        /* 헤더 스타일 */
         .main-header {
             font-size: 2.5rem;
             font-weight: 800;
@@ -39,14 +38,12 @@ def local_css():
             margin-bottom: 2rem;
         }
         
-        /* 입력 폼 스타일 */
         .stTextArea textarea {
             background-color: #FFFFFF;
             border-radius: 12px;
             border: 1px solid #E5E8EB;
         }
         
-        /* 버튼 스타일 (토스 블루) */
         .stButton button {
             background-color: #3182F6;
             color: white;
@@ -60,14 +57,6 @@ def local_css():
             background-color: #1B64DA;
             color: white;
         }
-        
-        /* 상태 배지 스타일 */
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -76,17 +65,14 @@ def main():
     st.set_page_config(page_title="알려줘", page_icon="📢", layout="centered")
     local_css()
 
-    # 세션 상태 초기화
     if 'logged_in' not in st.session_state:
         st.session_state['logged_in'] = False
 
-    # 상단 헤더 및 개발자 로그인 버튼 (컬럼으로 배치)
     col1, col2 = st.columns([8, 2])
     with col1:
         st.markdown('<div class="main-header">📢 알려줘</div>', unsafe_allow_html=True)
         st.markdown('<div class="sub-header">우리 반의 더 나은 내일을 위해, 무엇이든 말해주세요.</div>', unsafe_allow_html=True)
     with col2:
-        # 로그인 상태가 아닐 때만 로그인 버튼/팝업 표시
         if not st.session_state['logged_in']:
             with st.popover("개발자 로그인"):
                 user_id = st.text_input("아이디")
@@ -97,102 +83,74 @@ def main():
                         st.success("로그인 성공!")
                         st.rerun()
                     else:
-                        st.error("정보가 일치하지 않습니다.")
+                        st.error("정보 불일치")
         else:
             if st.button("로그아웃"):
                 st.session_state['logged_in'] = False
                 st.rerun()
 
-    # --- 탭 구분 (일반 사용자 / 개발자) ---
-    # 실제로는 탭 대신 로그인 여부에 따라 화면을 다르게 보여줍니다.
-    
     df = load_data()
 
-    # 1. 관리자(개발자) 화면
     if st.session_state['logged_in']:
-        st.info("🔧 개발자 모드입니다. 건의사항을 관리하세요.")
-        
+        st.info("🔧 개발자 모드: 건의사항 관리")
         if df.empty:
-            st.write("아직 등록된 건의사항이 없습니다.")
+            st.write("등록된 건의사항이 없습니다.")
         else:
-            # 최신순 정렬
             for index, row in df[::-1].iterrows():
                 with st.container():
                     st.markdown(f"""
-                    <div style="background-color:white; padding:20px; border-radius:15px; margin-bottom:15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                    <div style="background-color:white; padding:20px; border-radius:15px; margin-bottom:15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
                         <div style="font-size:0.9rem; color:#8B95A1;">{row['날짜']} | ID: {row['ID']}</div>
                         <div style="font-size:1.2rem; font-weight:bold; margin: 10px 0;">{row['내용']}</div>
-                        <div style="margin-top:10px;"><b>현재 상태:</b> {row['상태']}</div>
-                        <div style="margin-top:5px; color:#3182F6;"><b>개발자 코멘트:</b> {row['코멘트']}</div>
+                        <div>상태: <b>{row['상태']}</b></div>
+                        <div style="color:#3182F6;">코멘트: {row['코멘트']}</div>
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    # 관리 기능 (상태 변경 및 코멘트)
                     c1, c2, c3, c4 = st.columns([2, 2, 2, 4])
-                    if c1.button("해결 완료", key=f"sol_{index}"):
+                    if c1.button("해결", key=f"s_{index}"):
                         df.at[index, '상태'] = "✅ 해결 완료"
                         save_data(df)
                         st.rerun()
-                    if c2.button("보류", key=f"hold_{index}"):
+                    if c2.button("보류", key=f"h_{index}"):
                         df.at[index, '상태'] = "⏸ 보류"
                         save_data(df)
                         st.rerun()
-                    if c3.button("미완료", key=f"unsol_{index}"):
+                    if c3.button("미결", key=f"u_{index}"):
                         df.at[index, '상태'] = "🔥 해결 미완료"
                         save_data(df)
                         st.rerun()
                     
-                    new_comment = c4.text_input("코멘트 달기", key=f"com_{index}", placeholder="답변을 입력 후 엔터")
-                    if new_comment:
-                        df.at[index, '코멘트'] = new_comment
+                    new_com = c4.text_input("답변", key=f"c_{index}")
+                    if new_com:
+                        df.at[index, '코멘트'] = new_com
                         save_data(df)
                         st.rerun()
                 st.divider()
 
-    # 2. 일반 사용자 화면 (건의하기 & 목록 보기)
     else:
-        # 건의하기 폼
         with st.container():
             st.markdown("### 📝 문제점 건의하기")
             with st.form("suggestion_form", clear_on_submit=True):
-                content = st.text_area("어떤 문제가 있나요?", height=150, placeholder="예: 칠판 지우개가 너무 낡았어요.")
-                submitted = st.form_submit_button("보내기")
-                
-                if submitted and content:
+                content = st.text_area("내용 입력", height=100)
+                if st.form_submit_button("보내기") and content:
                     new_id = len(df) + 1
                     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-                    new_data = pd.DataFrame({
-                        'ID': [new_id],
-                        '날짜': [now],
-                        '내용': [content],
-                        '상태': ['접수 대기'],
-                        '코멘트': ['-']
-                    })
+                    new_data = pd.DataFrame({'ID': [new_id], '날짜': [now], '내용': [content], '상태': ['접수 대기'], '코멘트': ['-']})
                     df = pd.concat([df, new_data], ignore_index=True)
                     save_data(df)
-                    st.success("소중한 의견이 전달되었습니다!")
+                    st.success("전송 완료!")
                     st.rerun()
 
         st.markdown("---")
-        st.markdown("### 👀 건의함 목록")
-        
-        if df.empty:
-            st.write("아직 등록된 건의사항이 없습니다. 첫 번째 의견을 남겨주세요!")
-        else:
-            # 공개된 목록 보기 (읽기 전용)
+        if not df.empty:
             for _, row in df[::-1].iterrows():
-                status_color = "#333"
-                if "완료" in row['상태']: status_color = "#3182F6" # Blue
-                elif "보류" in row['상태']: status_color = "#FFB300" # Amber
-                elif "미완료" in row['상태']: status_color = "#F04452" # Red
-
                 st.markdown(f"""
-                <div style="background-color:white; padding:20px; border-radius:15px; margin-bottom:15px; border: 1px solid #E5E8EB;">
-                    <span style="background-color:{status_color}; color:white; padding:4px 8px; border-radius:6px; font-size:0.8rem;">{row['상태']}</span>
-                    <span style="float:right; color:#8B95A1; font-size:0.8rem;">{row['날짜']}</span>
-                    <div style="font-size:1.1rem; font-weight:600; margin-top:10px; margin-bottom:10px;">{row['내용']}</div>
-                    <div style="background-color:#F2F4F6; padding:10px; border-radius:8px; font-size:0.9rem; color:#4E5968;">
-                        <b>👨‍💻 개발자 답변:</b> {row['코멘트']}
+                <div style="background-color:white; padding:20px; border-radius:15px; margin-bottom:15px; border:1px solid #E5E8EB;">
+                    <span style="font-weight:bold; color:#3182F6;">{row['상태']}</span>
+                    <div style="font-size:1.1rem; margin:10px 0;">{row['내용']}</div>
+                    <div style="background-color:#F2F4F6; padding:10px; border-radius:8px; font-size:0.9rem;">
+                        <b>답변:</b> {row['코멘트']}
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
